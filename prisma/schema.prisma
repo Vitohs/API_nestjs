@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Task {
+  id            Int     @id   @default( autoincrement() )
+  name          String 
+  description   String
+  isCompleted   Boolean
+  createdAt     DateTime?     @default( now() )
+
+  userId  Int?
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id              Int       @id   @default( autoincrement() )
+  name            String
+  passwordHash    String
+  email           String    @unique
+  createdAt       DateTime?       @default( now() )
+  active          Boolean         @default(true)
+  avatar          String?
+
+  Task Task[]
+}
