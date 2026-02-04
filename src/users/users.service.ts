@@ -14,13 +14,14 @@ import { UpdateUserDTO } from './dto/update-user-dto.js';
 import { HashingServiceProtocol } from '../auth/utils/hash.service.js';
 import { PayloadDTO } from '../auth/dto/payload-dto.js';
 import path from 'path';
-import * as fs from 'fs/promises';
+import { FileService } from '../common/services/file.service.js';
 
 @Injectable()
 export class UsersService {
   constructor(
     private prisma: PrismaService,
     private readonly hashService: HashingServiceProtocol,
+    private readonly fileService: FileService,
   ) {}
 
   async getUser(id: number) {
@@ -132,15 +133,15 @@ export class UsersService {
   }
 
   async uploadFile(file: Express.Multer.File, token: PayloadDTO) {
+    const user = await this.findUserOrFail(token.sub);
+
     const extName = path.extname(file.originalname).toLowerCase().substring(1);
 
     const fileName = `${token.sub}.${extName}`;
 
     const pathMaster = path.resolve(process.cwd(), 'imgs', fileName);
 
-    await fs.writeFile(pathMaster, file.buffer);
-
-    const user = await this.findUserOrFail(token.sub);
+    await this.fileService.writeFile(pathMaster, file.buffer);
 
     const updatedUser = await this.prisma.user.update({
       where: { id: user.id },

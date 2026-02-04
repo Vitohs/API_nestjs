@@ -12,24 +12,32 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PayloadMock } from './mocks/tokenPayload.mock.js';
+import path from 'path';
+import { FileService } from '../common/services/file.service.js';
+import { FileServiceMock } from './mocks/fileService.mock.js';
 
 describe('UsersService', () => {
   let userService: UsersService;
   let prismaService: PrismaService;
   let hashService: HashingServiceProtocol;
+  let fileService: FileService;
 
   beforeEach(async () => {
+    jest.clearAllMocks();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
         { provide: PrismaService, useValue: PrismaServiceMock() },
         { provide: HashingServiceProtocol, useValue: HashServiceMock() },
+        { provide: FileService, useValue: FileServiceMock() },
       ],
     }).compile();
 
     userService = module.get<UsersService>(UsersService);
     prismaService = module.get<PrismaService>(PrismaService);
     hashService = module.get<HashingServiceProtocol>(HashingServiceProtocol);
+    fileService = module.get<FileService>(FileService);
   });
 
   describe('create', () => {
@@ -369,6 +377,114 @@ describe('UsersService', () => {
 
       expect(prismaService.user.findFirst).toHaveBeenCalled();
       expect(prismaService.user.findFirst).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('upload pfp', () => {
+    it('should throw Not Found Exception.', async () => {
+      // Arrange
+      const payload = PayloadMock;
+      const fileMock = {
+        originalname: 'victor.png',
+        mimetype: 'image/png',
+        size: 157,
+        buffer: Buffer.from(''),
+      } as Express.Multer.File;
+
+      jest.spyOn(prismaService.user, 'findFirst').mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(userService.uploadFile(fileMock, payload)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(prismaService.user.findFirst).toHaveBeenCalled();
+      expect(prismaService.user.findFirst).toHaveBeenCalledTimes(1);
+      expect(prismaService.user.findFirst).toHaveBeenCalledWith({
+        where: { id: payload.sub, active: true },
+      });
+    });
+
+    it('should upload avatar and update user succesfully.', async () => {
+      // Arrange
+      const payload = { ...PayloadMock, sub: 9 };
+      const fileMock = {
+        originalname: 'victor.png',
+        mimetype: 'image/png',
+        size: 157,
+        buffer: Buffer.from(''),
+      } as Express.Multer.File;
+      const mockCreatedAt = new Date('2026-02-03T10:00:00.000Z');
+      const mockUser = {
+        id: payload.sub,
+        name: 'nome',
+        email: 'user@gmail.com',
+        passwordHash: '_hash',
+        createdAt: mockCreatedAt,
+        active: true,
+        avatar: null,
+      };
+      const mockUserUpdated = {
+        id: payload.sub,
+        name: mockUser.name,
+        email: mockUser.email,
+        avatar: '9.png',
+      };
+
+      jest
+        .spyOn(prismaService.user, 'findFirst')
+        .mockResolvedValue(mockUser as any);
+      jest
+        .spyOn(prismaService.user, 'update')
+        .mockResolvedValue(mockUserUpdated as any);
+      // Act
+      const result = await userService.uploadFile(fileMock, payload);
+      const pathMaster = path.resolve(process.cwd(), 'imgs', '9.png');
+
+      // Assert
+      expect(fileService.writeFile).toHaveBeenCalledWith(
+        pathMaster,
+        fileMock.buffer,
+      );
+    });
+
+    it('should throw error in upload pfp', async () => {
+      const payload = { ...PayloadMock, sub: 9 };
+      const fileMock = {
+        originalname: 'victor.png',
+        mimetype: 'image/png',
+        size: 157,
+        buffer: Buffer.from(''),
+      } as Express.Multer.File;
+      const mockCreatedAt = new Date('2026-02-03T10:00:00.000Z');
+      const mockUser = {
+        id: payload.sub,
+        name: 'nome',
+        email: 'user@gmail.com',
+        passwordHash: '_hash',
+        createdAt: mockCreatedAt,
+        active: true,
+        avatar: null,
+      };
+      const mockUserUpdated = {
+        id: payload.sub,
+        name: mockUser.name,
+        email: mockUser.email,
+        avatar: '9.png',
+      };
+
+      jest
+        .spyOn(prismaService.user, 'findFirst')
+        .mockResolvedValue(mockUser as any);
+      jest
+        .spyOn(prismaService.user, 'update')
+        .mockResolvedValue(mockUserUpdated as any);
+
+      jest
+        .spyOn(fileService, 'writeFile')
+        .mockRejectedValue(new Error('deu erro.'));
+
+      const pathMaster = path.resolve(process.cwd(), 'imgs', '9.png');
+      await expect(userService.uploadFile(fileMock, payload)).rejects.toThrow();
     });
   });
 });
