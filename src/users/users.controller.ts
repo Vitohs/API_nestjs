@@ -69,13 +69,20 @@ export class UsersController {
     @TokenPayloadParam() tokenPayload: PayloadDTO,
     @UploadedFile(
       new ParseFilePipeBuilder()
-        .addFileTypeValidator( { fileType: /jpeg|jpg|png/g, errorMessage: "imagem precisa estar em jpeg ou jpg ou png." } )
-        .addMaxSizeValidator( { maxSize: 1 * (1024 * 1024), errorMessage: "imagem excede tamanho permitido." } )
-        .build({
-          exceptionFactory: (error) => new UnprocessableEntityException(error)
+        .addFileTypeValidator({
+          fileType: /jpeg|jpg|png/g,
+          errorMessage: 'imagem precisa estar em jpeg ou jpg ou png.',
         })
-    ) file: Express.Multer.File
+        .addMaxSizeValidator({
+          maxSize: 1 * (1024 * 1024),
+          errorMessage: 'imagem excede tamanho permitido.',
+        })
+        .build({
+          exceptionFactory: (error) => new UnprocessableEntityException(error),
+        }),
+    )
+    file: Express.Multer.File,
   ) {
-    return this.userService.uploadFile(file, tokenPayload)
+    return this.userService.uploadFile(file, tokenPayload);
   }
 }

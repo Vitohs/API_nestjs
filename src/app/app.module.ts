@@ -15,9 +15,16 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 
 @Module({
-  imports: [TasksModule, UsersModule, ConfigModule.forRoot(), AuthModule, 
-    ServeStaticModule.forRoot( { rootPath: join(process.cwd(), 'imgs'), serveRoot: "/files" } )
-],
+  imports: [
+    TasksModule,
+    UsersModule,
+    ConfigModule.forRoot(),
+    AuthModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'imgs'),
+      serveRoot: '/files',
+    }),
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

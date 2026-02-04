@@ -2,7 +2,8 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  NotFoundException
+  NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateUserDTO } from './dto/create-user-dto.js';
@@ -13,7 +14,7 @@ import { UpdateUserDTO } from './dto/update-user-dto.js';
 import { HashingServiceProtocol } from '../auth/utils/hash.service.js';
 import { PayloadDTO } from '../auth/dto/payload-dto.js';
 import path from 'path';
-import * as fs from 'fs/promises'
+import * as fs from 'fs/promises';
 
 @Injectable()
 export class UsersService {
@@ -131,27 +132,26 @@ export class UsersService {
   }
 
   async uploadFile(file: Express.Multer.File, token: PayloadDTO) {
-    
-    const extName = path.extname(file.originalname).toLowerCase().substring(1)
-    
-    const fileName = `${token.sub}.${extName}`
-    
-    const pathMaster = path.resolve(process.cwd(), 'imgs', fileName)
+    const extName = path.extname(file.originalname).toLowerCase().substring(1);
 
-    await fs.writeFile(pathMaster, file.buffer)
+    const fileName = `${token.sub}.${extName}`;
 
-    const user = await this.findUserOrFail(token.sub)
+    const pathMaster = path.resolve(process.cwd(), 'imgs', fileName);
 
-    const updatedUser = await this.prisma.user.update( { 
-      where : { id: user.id }, 
-      data  : { avatar: fileName },
-      select: { id: true, name: true, email: true, avatar: true } 
-    } )
+    await fs.writeFile(pathMaster, file.buffer);
+
+    const user = await this.findUserOrFail(token.sub);
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: user.id },
+      data: { avatar: fileName },
+      select: { id: true, name: true, email: true, avatar: true },
+    });
 
     return {
-      message: "imagem criada com sucesso.",
-      data: updatedUser
-    }
+      message: 'imagem criada com sucesso.',
+      data: updatedUser,
+    };
   }
 
   private toResponseDTO(user: UserModel): ResponseUserDTO {
@@ -163,7 +163,7 @@ export class UsersService {
   }
 
   private equalIdOrFail(userId: number, payloadId: number) {
-    if (userId !== payloadId) throw new ForbiddenException('Acesso negado.');
+    if (userId !== payloadId) throw new UnauthorizedException('Acesso negado.');
   }
 
   private async emailIsEmptyOrFail(email: string) {
