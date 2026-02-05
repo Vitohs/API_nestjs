@@ -18,7 +18,10 @@ import { join } from 'path';
   imports: [
     TasksModule,
     UsersModule,
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      envFilePath: process.env.NODE_ENV ? `.env.${process.env.NODE_ENV}`
+      : `.env`
+    }),
     AuthModule,
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'imgs'),
