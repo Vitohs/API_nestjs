@@ -19,8 +19,9 @@ import { join } from 'path';
     TasksModule,
     UsersModule,
     ConfigModule.forRoot({
-      envFilePath: process.env.NODE_ENV ? `.env.${process.env.NODE_ENV}`
-      : `.env`
+      envFilePath: process.env.NODE_ENV
+        ? `.env.${process.env.NODE_ENV}`
+        : `.env`,
     }),
     AuthModule,
     ServeStaticModule.forRoot({

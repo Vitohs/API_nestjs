@@ -10,16 +10,17 @@ export class User {
   @IsString()
   @MinLength(3)
   @IsNotEmpty()
-  public readonly name: string;
+  public readonly name!: string;
 
   @IsString()
   @IsNotEmpty()
-  public readonly password: string;
+  @MinLength(6)
+  public readonly password!: string;
 
   @IsEmail()
   @IsNotEmpty()
   @MinLength(6)
-  public readonly email: string;
+  public readonly email!: string;
 
   @IsOptional()
   public readonly createdAt?: Date;
